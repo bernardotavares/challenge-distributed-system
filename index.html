@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Challenge | SignIn</title>
+	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap.min.css">
+    
+    <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/js/bootstrap.min.js"></script>
+
+</head>
+<body>
+	<div class="container">
+        <h1>Challenge - Distributed System</h1>
+        <h2>Sign In</h2>
+		<form class="form" style="margin-top:150px;">
+			<label for="username">Username: </label><input class="form-control" id="username" name="username" autofocus required>
+			<label for="password">Password: </label><input class="form-control" id="password" name="password" required>
+			<div id='response' style="font-weight: bold; color: #555; font-size: 14px; margin-top:15px;"></div>
+            <input class="form-control btn btn-primary" type="button" onclick="SignIn(this.form)" value="Login" style="margin-top: 50px;"/>
+        </form>
+        <a href="password_recovery.html" class="form-control btn btn-secondary">Forgot Password</a>
+        <a href="signup.html" class="form-control btn btn-secondary">Sign Up</a>
+    </div>
+    
+    <script language="javascript">
+        /*function to check userid & password*/
+        function SignIn(form) {
+            var postData = {
+                    topic: 'login',
+                    username: form.username.value,
+                    password: form.password.value,
+                }
+            var dataString = JSON.stringify(postData);
+            
+            // show that something is loading
+            $('#response').html("Loading response...");
+            
+            $.ajax({
+                type: "POST",
+                url: "http://localhost/challenge/api/producer.php",
+                dataType: "json",
+                data: { myData:dataString },
+            })
+            .done(function( msg ) {
+                $('#response').html(msg.message)
+                // alert( "Data Saved: " + msg );
+            })
+            
+            .fail(function() {
+                
+                // just in case posting your form failed
+                $('#response').html("Login Failed");
+                
+            });
+        }
+
+
+    </script>
+
+</body>
+</html>
