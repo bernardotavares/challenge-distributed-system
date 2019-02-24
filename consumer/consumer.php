@@ -3,12 +3,16 @@ require '../vendor/autoload.php';
 include_once 'config/database.php';
 include_once 'objects/user.php';
 
-// Database connection
-$database = new Database();
-$db = $database->getConnection();
+date_default_timezone_set('PRC');
+use Kafka\Consumer;
+use Kafka\ConsumerConfig;
+// use Monolog\Handler\StdoutHandler;
+// use Monolog\Logger;
 
-// Instantiate product object
-$user = new User($db);
+// // Create the logger
+// $logger = new Logger('my_logger');
+// // Now add some handlers
+// $logger->pushHandler(new StdoutHandler());
 
 // Consumer Configurations
 $config = \Kafka\ConsumerConfig::getInstance();
@@ -17,17 +21,25 @@ $config->setMetadataBrokerList('127.0.0.1:9092');
 $config->setGroupId('users');
 $config->setBrokerVersion('1.0.0');
 $config->setTopics(['create_user', 'login', 'recover_password']);
+
 $consumer = new \Kafka\Consumer();
+// $consumer->setLogger($logger);
 
-
-// Consumer will get producer data and act accordingly
 $consumer->start(function($topic, $part, $message) {
-    
-    // Get data
-    $data = json_decode($message, true);
-    $m_topic = $data['topic'];
+    // Database connection
+    $database = new Database();
+    $db = $database->getConnection();
 
-    if($m_topic == 'create_user'){
+    // Get data
+    $data = json_decode($message["message"]["value"], true);
+
+
+    // We act depending of the topic
+    if($topic == 'create_user'){
+
+        // Instantiate product object
+        $user = new User($db);
+
         // Set values
         $user->username = $data['username'];
         $user->email = $data['email'];
@@ -44,7 +56,7 @@ $consumer->start(function($topic, $part, $message) {
             echo json_encode(array("message" => "Unable to create user."));
         }
     }
-    elseif($m_topic == 'login'){
+    elseif($topic == 'login'){
         // Set values
         $username = htmlspecialchars(strip_tags($data['username']));
         $password = htmlspecialchars(strip_tags($data['password']));
@@ -59,7 +71,7 @@ $consumer->start(function($topic, $part, $message) {
             echo json_encode(array("message" => "Login failed."));
         }
     }
-    elseif($m_topic == 'recover_password'){
+    elseif($topic == 'recover_password'){
         // Set values
         $username = htmlspecialchars(strip_tags($data['username']));
 
@@ -79,21 +91,19 @@ $consumer->start(function($topic, $part, $message) {
 });
 
 
-
-
 // Function to verify if given password and username exist in the database
 function verifyLogin($db, $username, $password){
-     
+    
     // PDO Query
     $query = "SELECT id, username, password
             FROM users WHERE
             username = :username
             LIMIT 0,1";
- 
+
     $stmt = $db->prepare( $query );
     $stmt->bindParam(':username', $username);
     $stmt->execute();
- 
+
     // Check if there are any rows
     $num = $stmt->rowCount();
     if($num>0){ 
@@ -113,30 +123,46 @@ function verifyLogin($db, $username, $password){
 
 // Function for password recovery
 function recoverPassword($db, $username){
-     
+    
     // PDO Query
-    $query = "SELECT id, username, password
+    $query = "SELECT id, username, password, email
             FROM users WHERE
             username = :username
             LIMIT 0,1";
- 
+
     $stmt = $db->prepare( $query );
     $stmt->bindParam(':username', $username);
-     $stmt->execute();
- 
+    $stmt->execute();
+
     // Check if there are any rows
     $num = $stmt->rowCount();
- 
+
     if($num>0){ 
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
-        $hash = $row['password'];
-        $msg = "Your (hashed) Password: ".$hash;
-        // $msg = wordwrap($msg,70);
-        // // send email
-        // mail($email,"Your Password",$msg);
+
+        // Send password recovery email
+        $to      = $row['email'];
+        $from    = 'challenge@example.com';
+        $message = 'hello, here is your password: '.$row['password'];
+        $headers = 'From: challenge@example.com' . "\r\n" .
+        'Reply-To: challenge@example.com' . "\r\n" .
+        'X-Mailer: PHP/' . phpversion();
+
+        sendMail($to, $from, $message, $headers);
         
-        return $msg; // let's simplify for now
+        return $message; // let's return the message for now
     }
- 
+
     return false;
+}
+
+function sendMail($to, $from, $message, $headers){
+
+    try {
+        mail($to, $subject, $message, $headers);
+        echo 'Message has been sent.';
+    }
+    catch (Exception $e) {
+        echo 'Message could not be sent.';
+    }
 }

@@ -44,14 +44,12 @@
                 data: { myData:dataString },
             })
             .done(function( msg ) {
-                $('#response').html(msg.message)
+                $('#response').html('User was created.')
                 // alert( "Data Saved: " + msg );
             })
             .fail(function() {
-                
                 // just in case posting your form failed
                 alert( "Registration failed." );
-                
             });
         }
 

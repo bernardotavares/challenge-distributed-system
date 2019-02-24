@@ -42,8 +42,9 @@ class User{
         $stmt->bindParam(':email', $this->email);
     
         // Hash the password before saving to database
-        $password_hash = password_hash($this->password, PASSWORD_BCRYPT);
-        $stmt->bindParam(':password', $password_hash);
+        // Normaly we would hash the password, but because we want to retrieve the password directly in the password recovery email we wont do that
+        // $password_hash = password_hash($this->password, PASSWORD_BCRYPT);
+        $stmt->bindParam(':password', $this->password);
     
         // Execute the query and check if successful
         if($stmt->execute()){
@@ -52,10 +53,7 @@ class User{
         else{
             return false;
         }
-    
-        
     }
-
-
 }
+
 ?>

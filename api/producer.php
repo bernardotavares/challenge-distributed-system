@@ -4,7 +4,6 @@
 header("Access-Control-Allow-Origin: http://localhost/challenge/");
 header("Content-Type: application/json; charset=UTF-8");
 header("Access-Control-Allow-Methods: POST");
-header("Access-Control-Max-Age: 3600");
 header("Access-Control-Allow-Headers: Content-Type, Access-Control-Allow-Headers, Authorization, X-Requested-With");
 
 // Producer Configurations
@@ -18,21 +17,30 @@ $config->setIsAsyn(false);
 $config->setProduceInterval(500);
 
 
-// Producer sends data to the consumer
+// $topic = $data['topic'];
+// $data = $_POST['myData'];
+
+
 $producer = new \Kafka\Producer(
     function() {
+        $data = json_decode($_POST['myData'], true);
+        $topic = $data['topic'];
+
         return [
-            $_POST['myData'],
+            [
+                'topic' => $topic,
+                'value' => $_POST['myData'],
+                'key' => 'testkey',
+            ],
         ];
     }
 );
-
 $producer->success(function($result) {
-    var_dump($result);
+    // var_dump($result);
+    echo json_encode($result);
 });
 $producer->error(function($errorCode) {
-    var_dump($errorCode);
+    echo json_encode($errorCode);
 });
 $producer->send(true);
-
 ?>

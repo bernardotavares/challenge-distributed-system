@@ -6,7 +6,7 @@ class Database{
     private $host = "localhost";
     private $db_name = "challenge";
     private $username = "root";
-    private $password = "mysql";
+    private $password = "";
     public $conn;
  
     // Database Connection
